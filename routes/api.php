@@ -21,7 +21,7 @@ Route::get('/ping', function() {
     return ['pong' => true];
 });
 
-Route::get('/random', [BarberController::class, 'createRandom']);
+// Route::get('/random', [BarberController::class, 'createRandom']);
 
 // Rotas Auth
 Route::get('/401', [AuthController::class, 'anauthorized'])->name('login');
@@ -38,8 +38,8 @@ Route::post('/user/favorites', [UserController::class, 'addFavorite']);
 Route::get('/user/appointments', [UserController::class, 'getAppointments']);
 
 // Rotas barbers
-Route::get('/barbers', [BarberController::class, 'list']);
-Route::get('/barbers/{id}', [BarberController::class, 'one']);
+Route::post('/barbers', [BarberController::class, 'list']);
+Route::get('/barber/{id}', [BarberController::class, 'one']);
 Route::post('/barber/{id}/appointment', [BarberController::class, 'setAppointment']);
 
 Route::get('/search', [BarberController::class, 'search']);
