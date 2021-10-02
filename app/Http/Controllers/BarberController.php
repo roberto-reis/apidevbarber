@@ -317,6 +317,25 @@ class BarberController extends Controller
         return response()->json($response);
     }
 
+    public function search(Request $request)
+    {
+        $response = ['error' => '', 'list' => []];
 
+        $search = $request->input('search');
 
+        if ($search) {
+
+            $barbers = Barber::where('name', 'LIKE', '%' . $search . '%')->get();
+
+            foreach ($barbers as $keyBarber => $barber) {
+                $barbers[$keyBarber]['avatar'] = url('media/avatars/' . $barbers[$keyBarber]['avatar']);
+            }
+
+            $response['list'] = $barbers;
+        } else {
+            $response['error'] = 'Digite algo para buscar!';
+        }
+
+        return response()->json($response);
+    }
 }

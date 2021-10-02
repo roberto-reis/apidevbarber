@@ -57,4 +57,29 @@ class UserController extends Controller
 
         return response()->json($response);
     }
+
+    public function getFavorites()
+    {
+        $response = ['error' => '', 'list' => []];
+
+        $favorites = UserFavorite::where('id_user', auth('api')->id())->get();
+
+        if($favorites) {
+            foreach($favorites as $favorite) {
+                $barber = Barber::find($favorite['id_barber']);
+                $barber['avatar'] = url('media/avatars/'.$barber['avatar']);
+
+                $response['list'][] = $barber;
+            }
+        }
+        
+        return response()->json($response);
+    }
+
+    public function getAppointments()
+    {
+        
+    }
+
+
 }
