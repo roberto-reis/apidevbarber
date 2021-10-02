@@ -34,7 +34,7 @@ Route::post('/auth/create', [AuthController::class, 'create']);
 Route::get('/user', [UserController::class, 'read']);
 Route::post('/user', [UserController::class, 'update']);
 Route::get('/user/favorites', [UserController::class, 'getFavorites']);
-Route::post('/user/favorites', [UserController::class, 'addFavorite']);
+Route::post('/user/favorites', [UserController::class, 'toggleFavorite']);
 Route::get('/user/appointments', [UserController::class, 'getAppointments']);
 
 // Rotas barbers

@@ -317,8 +317,6 @@ class BarberController extends Controller
         return response()->json($response);
     }
 
-    
-
 
 
 }
