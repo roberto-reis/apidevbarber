@@ -10,8 +10,6 @@ use App\Models\BarberTestimonial;
 use App\Models\BarberAvailability;
 use App\Models\UserAppointment;
 use App\Models\UserFavorite;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
 
 class BarberController extends Controller
 {
@@ -170,7 +168,7 @@ class BarberController extends Controller
             $cFavorito = UserFavorite::where('id_user', auth('api')->id())
                 ->where('id_barber', $barber->id)
                 ->count();
-            if($cFavorito > 0) {
+            if ($cFavorito > 0) {
                 $barber['favorited'] = true;
             }
 
@@ -178,7 +176,7 @@ class BarberController extends Controller
             $barber['photos'] = BarberPhoto::select(['id', 'url'])
                 ->where('id_barber', $barber->id)
                 ->get();
-            foreach($barber['photos'] as $keyPhoto => $valuePhoto) {
+            foreach ($barber['photos'] as $keyPhoto => $valuePhoto) {
                 $barber['photos'][$keyPhoto]['url'] = url('media/uploads/' . $barber['photos'][$keyPhoto]['url']);
             }
 
@@ -197,7 +195,7 @@ class BarberController extends Controller
             // Pegando a disponibilidade crua
             $avails = BarberAvailability::where('id_barber', $barber->id)->get();
             $availWeedays = [];
-            foreach($avails as $item) {
+            foreach ($avails as $item) {
                 $availWeedays[$item['weekday']] = explode(',', $item['hours']);
             }
 
@@ -205,33 +203,34 @@ class BarberController extends Controller
             $appointments = [];
             $appQuery = UserAppointment::where('id_barber', $barber->id)
                 ->whereBetween('ap_datetime', [
-                    date('Y-m-d').' 00:00:00',
-                    date('Y-m-d', strtotime('+20 days')).' 23:59:59'
+                    date('Y-m-d') . ' 00:00:00',
+                    date('Y-m-d', strtotime('+20 days')) . ' 23:59:59'
                 ])
                 ->get();
-            foreach($appQuery as $appItem) {
+
+            foreach ($appQuery as $appItem) {
                 $appointments[] = $appItem['ap_datetime'];
             }
 
             // Gera a disponibilidade real
-            for($q=0; $q<20; $q++) {
-                $timeItem = strtotime('+'.$q.' days');
+            for ($q = 0; $q < 20; $q++) {
+                $timeItem = strtotime('+' . $q . ' days');
                 $weekday = date('w', $timeItem);
 
-                if(in_array($weekday, array_keys($availWeedays))) {
+                if (in_array($weekday, array_keys($availWeedays))) {
                     $hours = [];
 
                     $dayItem = date('Y-m-d', $timeItem);
-                    foreach($availWeedays[$weekday] as $hoursItem) {
-                        $dayFormated = $dayItem.' '.$hoursItem.':00';
-                        if(!in_array($dayFormated, $appointments)) {
+                    foreach ($availWeedays[$weekday] as $hoursItem) {
+                        $dayFormated = $dayItem . ' ' . $hoursItem . ':00';
+                        if (!in_array($dayFormated, $appointments)) {
                             $hours[] = $hoursItem;
                         }
                     }
-                    if(count($hours) > 0) {
+                    if (count($hours) > 0) {
                         $availability[] = [
                             'date' => $dayItem,
-                            'hours' =>$hours
+                            'hours' => $hours
                         ];
                     }
                 }
@@ -240,11 +239,86 @@ class BarberController extends Controller
 
             $barber['available'] = $availability;
             $response['data'] = $barber;
-
         } else {
             $response['error'] = 'Barbeiro não encontrado.';
         }
 
         return response()->json($response);
     }
+
+    public function setAppointment(Request $request, $id)
+    {
+        $response = ['error' => ''];
+
+        $service = $request->input('service');
+        $year = intval($request->input('year'));
+        $month = intval($request->input('month'));
+        $day = intval($request->input('day'));
+        $hour = intval($request->input('hour'));
+
+        $month = ($month < 10) ? '0' . $month : $month;
+        $day = ($day < 10) ? '0' . $day : $day;
+        $hour = ($hour < 10) ? '0' . $hour : $hour;
+
+        // 1. Verificar se o serviço existe
+        $barberService = BarberService::select()
+            ->where('id', $service)
+            ->where('id_barber', $id)
+            ->first();
+        if ($barberService) {
+            // 2. Verificar se a data é real
+            $appointmentDate = $year . '-' . $month . '-' . $day . ' ' . $hour . ':00:00';
+
+            if (strtotime($appointmentDate) > 0) {
+
+                // 3. Verificar se o barbeiro já possui agendamento neste dia/hora
+                $userAppointment = UserAppointment::select()
+                    ->where('id_barber', $id)
+                    ->where('ap_datetime', $appointmentDate)
+                    ->count();
+
+                if ($userAppointment === 0) {
+
+                    // 4. Verificar se o barbeiro atende nesta data
+                    $weekday = date('w', strtotime($appointmentDate));
+                    $avail = BarberAvailability::select()
+                        ->where('id_barber', $id)
+                        ->where('weekday', $weekday)
+                        ->first();
+                    if ($avail) {
+                        // 4.1 Verificar se o barbeiro atende nestas horas
+                        $hours = explode(',', $avail['hours']);
+                        if (in_array($hour . ':00', $hours)) {
+                            // 5. Fazer o agendamento
+                            $newUserAppointment = new UserAppointment();
+                            $newUserAppointment->id_user = auth('api')->id();
+                            $newUserAppointment->id_barber = $id;
+                            $newUserAppointment->id_service = $service;
+                            $newUserAppointment->ap_datetime = $appointmentDate;
+                            $newUserAppointment->save();
+
+                            $response['sucesso'] = 'Serviço agendado com sucesso.';
+                        } else {
+                            $response['error'] = 'Barbeiro não atende hora.';
+                        }
+                    } else {
+                        $response['error'] = 'Barbeiro não atende neste dia.';
+                    }
+                } else {
+                    $response['error'] = 'Barbeiro já possui agendamento neste dia/hora';
+                }
+            } else {
+                $response['error'] = 'Data inválida!';
+            }
+        } else {
+            $response['error'] = 'Serviço inexistente!';
+        }
+
+        return response()->json($response);
+    }
+
+    
+
+
+
 }
