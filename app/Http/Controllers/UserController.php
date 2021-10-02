@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Barber;
+use App\Models\BarberService;
+use App\Models\UserAppointment;
 use App\Models\UserFavorite;
+use finfo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -78,7 +81,33 @@ class UserController extends Controller
 
     public function getAppointments()
     {
-        
+        $response = ['error' => '', 'list' => []];
+
+        $appointments = UserAppointment::select()
+            ->where('id_user', auth('api')->id())
+            ->orderBy('ap_datetime', 'DESC')
+        ->get();
+
+        if($appointments) {
+
+            foreach($appointments as $appointment) {
+                $barber = Barber::find($appointment['id_barber']);
+                $barber['avatar'] = url('media/avatar/'.$barber['avatar']);
+
+                $barberService = BarberService::find($appointment['id_service']);
+
+                $response['list'][] = [
+                    'id' => $appointment['id'],
+                    'datetime' => $appointment['ap_datetime'],
+                    'barber' => $barber,
+                    'service' => $barberService
+                ];
+                
+            }
+
+        }
+
+        return response()->json($response);
     }
 
 
