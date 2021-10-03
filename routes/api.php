@@ -32,7 +32,8 @@ Route::post('/auth/create', [AuthController::class, 'create']);
 
 // Rota User
 Route::get('/user', [UserController::class, 'read']);
-Route::post('/user', [UserController::class, 'update']);
+Route::put('/user', [UserController::class, 'update']);
+Route::post('/user/avatar', [UserController::class, 'updateAvatar']);
 Route::get('/user/favorites', [UserController::class, 'getFavorites']);
 Route::post('/user/favorites', [UserController::class, 'toggleFavorite']);
 Route::get('/user/appointments', [UserController::class, 'getAppointments']);
