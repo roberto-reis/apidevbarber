@@ -35,8 +35,8 @@ class BarberController extends Controller
         return json_decode($response, true);
     }
 
-    /*
-    public function createRandom()
+    
+    /* public function createRandom()
     {
         $array = ['error' => ''];
         
@@ -99,8 +99,8 @@ class BarberController extends Controller
             }
         }
         return $array;
-    }
-    */
+    } */
+   
 
     public function list(Request $request)
     {
